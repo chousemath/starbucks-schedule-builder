@@ -78,10 +78,35 @@ const jsDateToGoogle = (JSdate: Date): number => {
 function onOpen(e) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = spreadsheet.getSheetByName('Partners');
-  sheet.getRange('B23').setValue(jsDateToGoogle(new Date()));
+  const dateCell = sheet.getRange('B23');
+  dateCell.setValue(jsDateToGoogle(new Date()));
+  dateCell.setFontWeight('bold');
+  dateCell.setVerticalAlignment('center');
+  dateCell.setHorizontalAlignment('center');
+
   // there is no need for the user to edit this sheet manually
   const sheetPositions = spreadsheet.getSheetByName('Positions');
   if (!sheetPositions.isSheetHidden()) sheetPositions.hideSheet();
+
+  const makeScheduleCell = sheet.getRange('B24');
+  makeScheduleCell.setValue('스케줄 만들기');
+  makeScheduleCell.setFontWeight('bold');
+  makeScheduleCell.setVerticalAlignment('center');
+  makeScheduleCell.setHorizontalAlignment('center');
+  makeScheduleCell.setBackground('#cbffc3');
+}
+
+function onEdit(e) {
+  const range = e.range;
+  const row = range.getRow();
+  const col = range.getColumn();
+  const val = range.getValue();
+  if (row === 24 && col === 2) {
+    Logger.log(val);
+    if (val === '만들기 진행 중') {
+      range.setBackground('#ffc3c3');
+    }
+  }
 }
 
 function makeSchedule() {
