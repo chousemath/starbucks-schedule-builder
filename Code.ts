@@ -126,7 +126,9 @@ function makeSchedule() {
   }
 
   // set default background color to red
-  sheetSchedule.getRange(2, 2, 7, partnersValid.length).setBackground('#ffc3c3');
+  const shiftCells = sheetSchedule.getRange(2, 2, 7, partnersValid.length);
+  shiftCells.setBackground('#ffc3c3');
+  shiftCells.setBorder(true, true, true, true, true, true);
 
   const schedule = {};
   to7.forEach(d => schedule[d] = dupObj(emptyDay));
