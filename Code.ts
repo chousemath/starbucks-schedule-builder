@@ -2,10 +2,34 @@
 const text = { create: '스케줄 만들기', inProgress: '만들기 진행 중', };
 const createBtn = { row: 24, col: 2 };
 const dateData = { label: { row: 23, col: 1 }, selector: { row: 23, col: 2 }, };
-const partnerArea = { start: { row: 2, col: 1 }, numberOfPartners: 20, numColumns: 2, };
+const partnerArea = { start: { row: 2, col: 1 }, numberOfPartners: 20, numColumns: 4, };
 const leftOverSection = { row: 10, col: 1 }
-
 const colors = { red: '#ffc3c3', green: '#cbffc3', };
+const dayAbbrev = ['일', '월', '화', '수', '목', '금', '토'];
+const shiftBG = { '오픈': colors.green, '미들': '#feffba', '마감': '#f2d0ff' };
+const emptyDay = {};
+
+enum Day {
+  None = -1,
+  Sunday = 0,
+  Monday = 1,
+  Tuesday = 2,
+  Wednesday = 3,
+  Thursday = 4,
+  Friday = 5,
+  Saturday = 6,
+}
+
+const TextToDay = {
+  '없슴': Day.None,
+  '일요일': Day.Sunday,
+  '월요일': Day.Monday,
+  '화요일': Day.Tuesday,
+  '수요일': Day.Wednesday,
+  '목요일': Day.Thursday,
+  '금요일': Day.Friday,
+  '토요일': Day.Saturday,
+};
 
 enum SBPosition {
   Ignore = 0,
@@ -17,19 +41,16 @@ enum SBPosition {
   StoreManager = 6,
 }
 
-const SBColors = [
-  '#3ca1ff',
-  '#0d552d',
-  '#1e5b9f',
-  '#d64b4b',
-  '#1e5b9f',
-  '#11237a',
-  '#000000',
-];
+interface Partner {
+  name: string;
+  position: SBPosition;
+  columnNumber: number;
+  RestDay1: Day,
+  RestDay2: Day,
+  id: number;
+}
 
-enum SBShifts { Opening = 1, Middle = 2, Closing = 3, }
-
-const TextToSBPosition = {
+const TextToPosition = {
   '무시': SBPosition.Ignore,
   '트레이니': SBPosition.Trainee,
   '바리스타': SBPosition.Barista,
@@ -49,19 +70,19 @@ const ShortPositions = {
   '점장': '점',
 };
 
-const dayAbbrev = ['일', '월', '화', '수', '목', '금', '토'];
+const Colors = [
+  '#3ca1ff',
+  '#0d552d',
+  '#1e5b9f',
+  '#d64b4b',
+  '#1e5b9f',
+  '#11237a',
+  '#000000',
+];
 
-const shiftNames = ['오픈', '미들', '마감'];
-const shiftBG = { '오픈': colors.green, '미들': '#feffba', '마감': '#f2d0ff' };
-const emptyDay = {};
-shiftNames.forEach(s => emptyDay[s] = []);
+const ShiftNames = ['오픈', '미들', '마감'];
 
-interface Partner {
-  name: string;
-  position: SBPosition;
-  columnNumber: number;
-  id: number;
-}
+ShiftNames.forEach(s => emptyDay[s] = []);
 
 const addDays = (date: number, days: number): Date => {
   const result = new Date(date);
@@ -165,7 +186,9 @@ function makeSchedule() {
     const shortPos = ShortPositions[posText];
     return {
       name: `${(v[0] as string).trim()} (${shortPos})`,
-      position: TextToSBPosition[posText],
+      position: TextToPosition[posText],
+      RestDay1: TextToDay[(v[2] as string).trim()],
+      RestDay2: TextToDay[(v[3] as string).trim()],
       id: Math.floor(Math.random() * 10000000),
       columnNumber: 0,
     };
@@ -182,7 +205,7 @@ function makeSchedule() {
     cell.setHorizontalAlignment('center');
     cell.setBorder(true, true, true, true, true, true);
     cell.setFontColor('#ffffff');
-    cell.setBackground(SBColors[partnersValid[i].position]);
+    cell.setBackground(Colors[partnersValid[i].position]);
     partnersValid[i].columnNumber = columnNumber;
   }
 
@@ -201,16 +224,18 @@ function makeSchedule() {
   // assign shifts for each day
   to7.some(d => {
     const positionsInShift: Array<SBPosition> = [];
-    shiftNames.some(s => {
+    ShiftNames.some(s => {
       to2.some(_ => {
         // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
-        const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+        const ids: Array<number> = [].concat.apply([], ShiftNames.map((sn: string) => {
           return schedule[d][sn].map((sh: Partner) => sh.id);
         }));
         to1000.some(_ => {
           // make sure that this partner does not already have a shift on this day on this shift
           const selectedShift: Partner = shifts[shifts.length - 1];
           if (selectedShift.position !== SBPosition.Trainee &&
+            dates[d].getDay() !== selectedShift.RestDay1 &&
+            dates[d].getDay() !== selectedShift.RestDay2 &&
             ids.indexOf(selectedShift.id) === -1 &&
             // two baristas cannot open
             !(s === '오픈' &&
@@ -245,13 +270,15 @@ function makeSchedule() {
       const positionsInShift: Array<SBPosition> = [];
       const s = '마감';
       // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
-      const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+      const ids: Array<number> = [].concat.apply([], ShiftNames.map((sn: string) => {
         return schedule[d][sn].map((sh: Partner) => sh.id);
       }));
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
         if (selectedShift.position !== SBPosition.Trainee &&
+          dates[d].getDay() !== selectedShift.RestDay1 &&
+          dates[d].getDay() !== selectedShift.RestDay2 &&
           ids.indexOf(selectedShift.id) === -1) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
@@ -269,19 +296,19 @@ function makeSchedule() {
   // on Saturday
   if (shifts.length > 0) {
     to7.some(d => {
-
       if (dates[d].getDay() !== 6) return false;
-
       const positionsInShift: Array<SBPosition> = [];
       const s = '마감';
       // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
-      const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+      const ids: Array<number> = [].concat.apply([], ShiftNames.map((sn: string) => {
         return schedule[d][sn].map((sh: Partner) => sh.id);
       }));
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
         if (selectedShift.position !== SBPosition.Trainee &&
+          dates[d].getDay() !== selectedShift.RestDay1 &&
+          dates[d].getDay() !== selectedShift.RestDay2 &&
           ids.indexOf(selectedShift.id) === -1) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
@@ -299,19 +326,19 @@ function makeSchedule() {
   // on Sunday
   if (shifts.length > 0) {
     to7.some(d => {
-
       if (dates[d].getDay() !== 0) return false;
-
       const positionsInShift: Array<SBPosition> = [];
       const s = '마감';
       // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
-      const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+      const ids: Array<number> = [].concat.apply([], ShiftNames.map((sn: string) => {
         return schedule[d][sn].map((sh: Partner) => sh.id);
       }));
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
         if (selectedShift.position !== SBPosition.Trainee &&
+          dates[d].getDay() !== selectedShift.RestDay1 &&
+          dates[d].getDay() !== selectedShift.RestDay2 &&
           ids.indexOf(selectedShift.id) === -1) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
@@ -331,13 +358,15 @@ function makeSchedule() {
       const positionsInShift: Array<SBPosition> = [];
       const s = '마감';
       // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
-      const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+      const ids: Array<number> = [].concat.apply([], ShiftNames.map((sn: string) => {
         return schedule[d][sn].map((sh: Partner) => sh.id);
       }));
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
         if (selectedShift.position !== SBPosition.Trainee &&
+          dates[d].getDay() !== selectedShift.RestDay1 &&
+          dates[d].getDay() !== selectedShift.RestDay2 &&
           ids.indexOf(selectedShift.id) === -1) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
