@@ -17,6 +17,16 @@ enum SBPosition {
   StoreManager = 6,
 }
 
+const SBColors = [
+  '#3ca1ff',
+  '#0d552d',
+  '#1e5b9f',
+  '#d64b4b',
+  '#1e5b9f',
+  '#11237a',
+  '#000000',
+];
+
 enum SBShifts { Opening = 1, Middle = 2, Closing = 3, }
 
 const TextToSBPosition = {
@@ -38,6 +48,8 @@ const ShortPositions = {
   '부점장': '부',
   '점장': '점',
 };
+
+const dayAbbrev = ['일', '월', '화', '수', '목', '금', '토'];
 
 const shiftNames = ['오픈', '미들', '마감'];
 const shiftBG = { '오픈': colors.green, '미들': '#feffba', '마감': '#f2d0ff' };
@@ -94,6 +106,15 @@ const resetMakeScheduleButton = (sheet: GoogleAppsScript.Spreadsheet.Sheet) => {
   makeScheduleCell.setBackground(colors.green);
 };
 
+const setShiftCell = (cell: GoogleAppsScript.Spreadsheet.Range, shiftName: string) => {
+  cell.setValue(shiftName);
+  cell.setBackground(shiftBG[shiftName]);
+  cell.setFontWeight('bold');
+  cell.setVerticalAlignment('center');
+  cell.setHorizontalAlignment('center');
+  cell.setBorder(true, true, true, true, true, true);
+};
+
 function onOpen(_) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = spreadsheet.getSheetByName('Partners');
@@ -131,14 +152,6 @@ function makeSchedule() {
 
   const startDate = Date.parse(sheetPartners.getRange(dateData.selector.row, dateData.selector.col).getValue() as string);
   const dates = to7.map(n => addDays(startDate, n));
-  to7.forEach(n => {
-    const cell = sheetSchedule.getRange(n + 2, 1);
-    cell.setValue(dates[n]);
-    cell.setFontWeight('bold');
-    cell.setVerticalAlignment('center');
-    cell.setHorizontalAlignment('center');
-    cell.setBorder(true, true, true, true, true, true);
-  });
 
   const partnerData = sheetPartners.getRange(
     partnerArea.start.row,
@@ -168,6 +181,8 @@ function makeSchedule() {
     cell.setVerticalAlignment('center');
     cell.setHorizontalAlignment('center');
     cell.setBorder(true, true, true, true, true, true);
+    cell.setFontColor('#ffffff');
+    cell.setBackground(SBColors[partnersValid[i].position]);
     partnersValid[i].columnNumber = columnNumber;
   }
 
@@ -241,13 +256,67 @@ function makeSchedule() {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
           positionsInShift.push(shift.position);
-          const cell = sheetSchedule.getRange(d + 2, shift.columnNumber);
-          cell.setValue(s);
-          cell.setBackground(shiftBG[s]);
-          cell.setFontWeight('bold');
-          cell.setVerticalAlignment('center');
-          cell.setHorizontalAlignment('center');
-          cell.setBorder(true, true, true, true, true, true);
+          setShiftCell(sheetSchedule.getRange(d + 2, shift.columnNumber), s);
+          return true;
+        }
+        shifts = shuffle(shifts);
+      });
+      return exitCond();
+    });
+  }
+
+  // redo the process for all remaining shifts on the closing shift
+  // on Saturday
+  if (shifts.length > 0) {
+    to7.some(d => {
+
+      if (dates[d].getDay() !== 6) return false;
+
+      const positionsInShift: Array<SBPosition> = [];
+      const s = '마감';
+      // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
+      const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+        return schedule[d][sn].map((sh: Partner) => sh.id);
+      }));
+      to1000.some(_ => {
+        // make sure that this partner does not already have a shift on this day on this shift
+        const selectedShift: Partner = shifts[shifts.length - 1];
+        if (selectedShift.position !== SBPosition.Trainee &&
+          ids.indexOf(selectedShift.id) === -1) {
+          const shift: Partner = shifts.pop();
+          schedule[d][s].push(shift);
+          positionsInShift.push(shift.position);
+          setShiftCell(sheetSchedule.getRange(d + 2, shift.columnNumber), s);
+          return true;
+        }
+        shifts = shuffle(shifts);
+      });
+      return exitCond();
+    });
+  }
+
+  // redo the process for all remaining shifts on the middle shift
+  // on Sunday
+  if (shifts.length > 0) {
+    to7.some(d => {
+
+      if (dates[d].getDay() !== 0) return false;
+
+      const positionsInShift: Array<SBPosition> = [];
+      const s = '마감';
+      // const ids: Array<number> = schedule[d][s].map((shift: Partner) => shift.id);
+      const ids: Array<number> = [].concat.apply([], shiftNames.map((sn: string) => {
+        return schedule[d][sn].map((sh: Partner) => sh.id);
+      }));
+      to1000.some(_ => {
+        // make sure that this partner does not already have a shift on this day on this shift
+        const selectedShift: Partner = shifts[shifts.length - 1];
+        if (selectedShift.position !== SBPosition.Trainee &&
+          ids.indexOf(selectedShift.id) === -1) {
+          const shift: Partner = shifts.pop();
+          schedule[d][s].push(shift);
+          positionsInShift.push(shift.position);
+          setShiftCell(sheetSchedule.getRange(d + 2, shift.columnNumber), s);
           return true;
         }
         shifts = shuffle(shifts);
@@ -273,13 +342,7 @@ function makeSchedule() {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
           positionsInShift.push(shift.position);
-          const cell = sheetSchedule.getRange(d + 2, shift.columnNumber);
-          cell.setValue(s);
-          cell.setBackground(shiftBG[s]);
-          cell.setFontWeight('bold');
-          cell.setVerticalAlignment('center');
-          cell.setHorizontalAlignment('center');
-          cell.setBorder(true, true, true, true, true, true);
+          setShiftCell(sheetSchedule.getRange(d + 2, shift.columnNumber), s);
           return true;
         }
         shifts = shuffle(shifts);
@@ -303,6 +366,18 @@ function makeSchedule() {
     cell.setVerticalAlignment('center');
     cell.setHorizontalAlignment('center');
   });
+
+  to7.forEach(n => {
+    const cell = sheetSchedule.getRange(n + 2, 1);
+    const day = schedule[n];
+    const date = dates[n];
+    cell.setValue(`${date.getMonth() + 1}/${date.getDate()} ${dayAbbrev[date.getDay()]} (오${day['오픈'].length},미${day['미들'].length},마${day['마감'].length})`);
+    cell.setFontWeight('bold');
+    cell.setVerticalAlignment('center');
+    cell.setHorizontalAlignment('center');
+    cell.setBorder(true, true, true, true, true, true);
+  });
+  sheetSchedule.autoResizeColumns(1, partnersValid.length + 1);
 
   // reset the color and text of the make schedule button to let
   // the manager know they can run the script again
