@@ -118,14 +118,14 @@ const jsDateToGoogle = (JSdate: Date): number => {
   return ((D.getTime() - Null.getTime()) / 60000 - D.getTimezoneOffset()) / 1440;
 };
 
-const resetMakeScheduleButton = (sheet: GoogleAppsScript.Spreadsheet.Sheet) => {
-  const makeScheduleCell = sheet.getRange('B24');
-  makeScheduleCell.setValue(text.create);
-  makeScheduleCell.setFontWeight('bold');
-  makeScheduleCell.setVerticalAlignment('center');
-  makeScheduleCell.setHorizontalAlignment('center');
-  makeScheduleCell.setBackground(colors.green);
-};
+// const resetMakeScheduleButton = (sheet: GoogleAppsScript.Spreadsheet.Sheet) => {
+//   const makeScheduleCell = sheet.getRange('B24');
+//   makeScheduleCell.setValue(text.create);
+//   makeScheduleCell.setFontWeight('bold');
+//   makeScheduleCell.setVerticalAlignment('center');
+//   makeScheduleCell.setHorizontalAlignment('center');
+//   makeScheduleCell.setBackground(colors.green);
+// };
 
 const setShiftCell = (cell: GoogleAppsScript.Spreadsheet.Range, shiftName: string) => {
   cell.setValue(shiftName);
@@ -137,8 +137,8 @@ const setShiftCell = (cell: GoogleAppsScript.Spreadsheet.Range, shiftName: strin
 };
 
 function onOpen(_) {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = spreadsheet.getSheetByName('Partners');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Partners');
   const dateCell = sheet.getRange(dateData.selector.row, dateData.selector.col);
   dateCell.setValue(jsDateToGoogle(new Date()));
   dateCell.setFontWeight('bold');
@@ -148,27 +148,44 @@ function onOpen(_) {
   dateCell.setHorizontalAlignment('center');
 
   // there is no need for the user to edit this sheet manually
-  const sheetPositions = spreadsheet.getSheetByName('Positions');
+  const sheetPositions = ss.getSheetByName('Positions');
   if (!sheetPositions.isSheetHidden()) sheetPositions.hideSheet();
+  sheetPositions.protect();
 
-  resetMakeScheduleButton(sheet);
+  SpreadsheetApp.getUi()
+    .createMenu('운영')
+    .addItem('새 일정 만들기', 'makeSchedule')
+    .addItem('현재 일정 저장', 'saveSchedule')
+    .addToUi();
+  // resetMakeScheduleButton(sheet);
 }
 
-function onEdit(e) {
-  const r = e.range;
-  if (r.getRow() === createBtn.row &&
-    r.getColumn() === createBtn.col &&
-    r.getValue() === text.inProgress) {
-    r.setBackground(colors.red);
-    makeSchedule();
-  }
+// function onEdit(e) {
+//   const r = e.range;
+//   if (r.getRow() === createBtn.row &&
+//     r.getColumn() === createBtn.col &&
+//     r.getValue() === text.inProgress) {
+//     r.setBackground(colors.red);
+//     makeSchedule();
+//   }
+// }
+
+function saveSchedule() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const d = new Date();
+  const newSheet = ss.insertSheet()
+  newSheet.setName(`${d.getMonth() + 1}/${d.getDate()} (${Math.floor(Date.now() / 1000)})`);
+  const sheetSchedule = ss.getSheetByName('Schedule');
+  const data = sheetSchedule.getRange(1, 1, sheetSchedule.getLastRow(), sheetSchedule.getLastColumn());
+  const dest = newSheet.getRange(1, 1, sheetSchedule.getLastRow(), sheetSchedule.getLastColumn());
+  data.copyTo(dest);
 }
 
 function makeSchedule() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  const sheetPartners = spreadsheet.getSheetByName('Partners');
-  const sheetSchedule = spreadsheet.getSheetByName('Schedule');
+  const sheetPartners = ss.getSheetByName('Partners');
+  const sheetSchedule = ss.getSheetByName('Schedule');
   sheetSchedule.clear();
 
   const startDate = Date.parse(sheetPartners.getRange(dateData.selector.row, dateData.selector.col).getValue() as string);
@@ -410,5 +427,5 @@ function makeSchedule() {
 
   // reset the color and text of the make schedule button to let
   // the manager know they can run the script again
-  resetMakeScheduleButton(sheetPartners);
+  // resetMakeScheduleButton(sheetPartners);
 }
