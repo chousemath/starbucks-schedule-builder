@@ -8,6 +8,60 @@ const colors = { red: '#ffc3c3', green: '#cbffc3', };
 const dayAbbrev = ['일', '월', '화', '수', '목', '금', '토'];
 const shiftBG = { '오픈': colors.green, '미들': '#feffba', '마감': '#f2d0ff' };
 const emptyDay = {};
+const holidays = {
+  '2019': {
+    '1/1': '새해',
+    '2/4': '설날',
+    '2/5': '설날',
+    '2/6': '설날',
+    '3/1': '3·1 운동/삼일절',
+    '5/5': '어린이날',
+    '5/12': '부처님 오신 날',
+    '6/6': '현충일',
+    '8/15': '광복절',
+    '9/12': '추석',
+    '9/13': '추석',
+    '9/14': '추석',
+    '10/3': '개천절',
+    '10/9': '한글날',
+    '12/25': '크리스마스',
+  },
+  "2020": {
+    "1/1": "새해",
+    "1/24": "설날",
+    "1/25": "설날",
+    "1/26": "설날",
+    "3/1": "3·1 운동/삼일절",
+    "4/30": "부처님 오신 날",
+    "5/5": "어린이날",
+    "6/6": "현충일",
+    "8/15": "광복절",
+    "9/30": "추석",
+    "10/1": "추석",
+    "10/2": "추석",
+    "10/3": "개천절",
+    "10/9": "한글날",
+    "12/25": "크리스마스"
+  },
+  "2021": {
+    "1/1": "새해",
+    "2/12": "설날",
+    "2/13": "설날",
+    "2/14": "설날",
+    "3/1": "3·1 운동/삼일절",
+    "5/5": "어린이날",
+    "5/19": "부처님 오신 날",
+    "6/6": "현충일",
+    "8/15": "광복절",
+    "9/20": "추석",
+    "9/21": "추석",
+    "9/22": "추석",
+    "10/3": "개천절",
+    "10/9": "한글날",
+    "12/25": "크리스마스"
+  }
+};
+
 
 enum Day {
   None = -1,
@@ -176,9 +230,12 @@ function saveSchedule() {
   const newSheet = ss.insertSheet()
   newSheet.setName(`${d.getMonth() + 1}/${d.getDate()} (${Math.floor(Date.now() / 1000)})`);
   const sheetSchedule = ss.getSheetByName('Schedule');
-  const data = sheetSchedule.getRange(1, 1, sheetSchedule.getLastRow(), sheetSchedule.getLastColumn());
-  const dest = newSheet.getRange(1, 1, sheetSchedule.getLastRow(), sheetSchedule.getLastColumn());
+  const lastRow = sheetSchedule.getLastRow();
+  const lastCol = sheetSchedule.getLastColumn();
+  const data = sheetSchedule.getRange(1, 1, lastRow, lastCol);
+  const dest = newSheet.getRange(1, 1, lastRow, lastCol);
   data.copyTo(dest);
+  newSheet.autoResizeColumns(1, lastCol);
 }
 
 function makeSchedule() {
@@ -417,11 +474,19 @@ function makeSchedule() {
     const cell = sheetSchedule.getRange(n + 2, 1);
     const day = schedule[n];
     const date = dates[n];
-    cell.setValue(`${date.getMonth() + 1}/${date.getDate()} ${dayAbbrev[date.getDay()]} (오${day['오픈'].length},미${day['미들'].length},마${day['마감'].length})`);
+    const d = date.getDay();
+    const dayName = `${date.getMonth() + 1}/${d}`;
+    cell.setValue(`${dayName} ${dayAbbrev[d]} (오${day['오픈'].length},미${day['미들'].length},마${day['마감'].length})`);
     cell.setFontWeight('bold');
     cell.setVerticalAlignment('center');
     cell.setHorizontalAlignment('center');
     cell.setBorder(true, true, true, true, true, true);
+    const year = date.getFullYear();
+    if (holidays[year] && holidays[year][dayName]) {
+      cell.setBackground('#cc092f');
+      cell.setFontColor('#ffffff');
+      cell.setNote(holidays[year][dayName]);
+    }
   });
   sheetSchedule.autoResizeColumns(1, partnersValid.length + 1);
 
