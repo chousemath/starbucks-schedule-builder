@@ -171,15 +171,6 @@ const jsDateToGoogle = (JSdate: Date): number => {
   return ((D.getTime() - Null.getTime()) / 60000 - D.getTimezoneOffset()) / 1440;
 };
 
-// const resetMakeScheduleButton = (sheet: GoogleAppsScript.Spreadsheet.Sheet) => {
-//   const makeScheduleCell = sheet.getRange('B24');
-//   makeScheduleCell.setValue(text.create);
-//   makeScheduleCell.setFontWeight('bold');
-//   makeScheduleCell.setVerticalAlignment('center');
-//   makeScheduleCell.setHorizontalAlignment('center');
-//   makeScheduleCell.setBackground(colors.green);
-// };
-
 const setShiftCell = (cell: GoogleAppsScript.Spreadsheet.Range, shiftName: string) => {
   cell.setValue(shiftName);
   cell.setBackground(shiftBG[shiftName]);
@@ -189,6 +180,7 @@ const setShiftCell = (cell: GoogleAppsScript.Spreadsheet.Range, shiftName: strin
   cell.setBorder(true, true, true, true, true, true);
 };
 
+// Activated whenever the spreadsheet is opened
 function onOpen(_) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Partners');
@@ -205,23 +197,13 @@ function onOpen(_) {
   if (!sheetPositions.isSheetHidden()) sheetPositions.hideSheet();
   sheetPositions.protect();
 
+  // this is the main way for a user to create/save a schedule
   SpreadsheetApp.getUi()
     .createMenu('운영')
     .addItem('새 일정 만들기', 'makeSchedule')
     .addItem('현재 일정 저장', 'saveSchedule')
     .addToUi();
-  // resetMakeScheduleButton(sheet);
 }
-
-// function onEdit(e) {
-//   const r = e.range;
-//   if (r.getRow() === createBtn.row &&
-//     r.getColumn() === createBtn.col &&
-//     r.getValue() === text.inProgress) {
-//     r.setBackground(colors.red);
-//     makeSchedule();
-//   }
-// }
 
 function saveSchedule() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -246,9 +228,6 @@ function makeSchedule() {
 
   const startDate = Date.parse(sheetPartners.getRange(dateData.selector.row, dateData.selector.col).getValue() as string);
   const dates = to7.map(n => addDays(startDate, n));
-  // for (let d of dates) {
-  //   Logger.log(d);
-  // }
 
   const partnerData = sheetPartners.getRange(
     partnerArea.start.row,
@@ -491,8 +470,4 @@ function makeSchedule() {
     }
   });
   sheetSchedule.autoResizeColumns(1, partnersValid.length + 1);
-
-  // reset the color and text of the make schedule button to let
-  // the manager know they can run the script again
-  // resetMakeScheduleButton(sheetPartners);
 }
