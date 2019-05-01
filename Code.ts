@@ -62,7 +62,6 @@ const holidays = {
   }
 };
 
-
 enum Day {
   None = -1,
   Sunday = 0,
@@ -247,6 +246,9 @@ function makeSchedule() {
 
   const startDate = Date.parse(sheetPartners.getRange(dateData.selector.row, dateData.selector.col).getValue() as string);
   const dates = to7.map(n => addDays(startDate, n));
+  // for (let d of dates) {
+  //   Logger.log(d);
+  // }
 
   const partnerData = sheetPartners.getRange(
     partnerArea.start.row,
@@ -474,9 +476,9 @@ function makeSchedule() {
     const cell = sheetSchedule.getRange(n + 2, 1);
     const day = schedule[n];
     const date = dates[n];
-    const d = date.getDay();
+    const d = date.getDate();
     const dayName = `${date.getMonth() + 1}/${d}`;
-    cell.setValue(`${dayName} ${dayAbbrev[d]} (오${day['오픈'].length},미${day['미들'].length},마${day['마감'].length})`);
+    cell.setValue(`${dayName} ${dayAbbrev[date.getDay()]} (오${day['오픈'].length},미${day['미들'].length},마${day['마감'].length})`);
     cell.setFontWeight('bold');
     cell.setVerticalAlignment('center');
     cell.setHorizontalAlignment('center');
