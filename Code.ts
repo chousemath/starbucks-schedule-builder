@@ -98,8 +98,8 @@ interface Partner {
   name: string;
   position: SBPosition;
   columnNumber: number;
-  RestDay1: Day,
-  RestDay2: Day,
+  RestDay1: Day;
+  RestDay2: Day;
   id: number;
 }
 
@@ -218,6 +218,25 @@ function saveSchedule() {
   data.copyTo(dest);
   newSheet.autoResizeColumns(1, lastCol);
 }
+
+// function shareSchedule() {
+//   const ss = SpreadsheetApp.getActiveSpreadsheet();
+//   const d = new Date();
+//   const name = `${d.getMonth() + 1}/${d.getDate()} (${Math.floor(Date.now() / 1000)})`;
+//   const newSS = SpreadsheetApp.create(name);
+//   const newSheet = newSS.insertSheet();
+//   const sheetSchedule = ss.getSheetByName('Schedule');
+//   newSheet.setName(name);
+
+//   const lastRow = sheetSchedule.getLastRow();
+//   const lastCol = sheetSchedule.getLastColumn();
+//   const data = sheetSchedule.getRange(1, 1, lastRow, lastCol);
+//   const dest = newSheet.getRange(1, 1, lastRow, lastCol);
+//   data.copyTo(dest);
+//   newSheet.autoResizeColumns(1, lastCol);
+
+//   newSS.set
+// }
 
 function makeSchedule() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
