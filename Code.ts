@@ -233,21 +233,22 @@ function shareSchedule() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const d = new Date();
   const name = `${d.getMonth() + 1}/${d.getDate()} (${Math.floor(Date.now() / 1000)})`;
-  const newSS = SpreadsheetApp.create(name);
-  const newSheet = newSS.insertSheet();
   const sheetSchedule = ss.getSheetByName('Schedule');
-  newSheet.setName(name);
+
+  const doc = DocumentApp.create(name);
+  const body = doc.getBody();
 
   const lastRow = sheetSchedule.getLastRow();
   const lastCol = sheetSchedule.getLastColumn();
   const data = sheetSchedule.getRange(1, 1, lastRow, lastCol).getValues();
-  const dest = newSheet.getRange(1, 1, lastRow, lastCol);
-  dest.setValues(data);
-  newSheet.autoResizeColumns(1, lastCol);
-  newSS.addViewer(email);
 
-  const sheet1 = newSS.getSheetByName('Sheet1');
-  if (sheet1) newSS.deleteSheet(sheet1);
+  body.appendTable(data as any);
+
+  const docblob = doc.getAs('application/pdf');
+  docblob.setName(doc.getName() + ".pdf");
+  const file = DriveApp.createFile(docblob as any);
+
+  MailApp.sendEmail(email, '스타벅스 스케줄', 'Schedule is attached below:', { attachments: file });
 
   ui.alert('일정이 성공적으로 공유되었습니다.');
 }
