@@ -253,7 +253,9 @@ function makeSchedule() {
 
   const sheetPartners = ss.getSheetByName('Partners');
   const sheetSchedule = ss.getSheetByName('Schedule');
+
   sheetSchedule.clear();
+  for (let ch of sheetSchedule.getCharts()) sheetSchedule.removeChart(ch);
 
   const startDate = Date.parse(sheetPartners.getRange(dateData.selector.row, dateData.selector.col).getValue() as string);
   const dates = to7.map(n => addDays(startDate, n));
