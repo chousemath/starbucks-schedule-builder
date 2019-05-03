@@ -1,5 +1,6 @@
 #!/bin/bash
 
+clasp push
 git add .
 git commit -am "Quickly saved through a bash script..."
 git push
