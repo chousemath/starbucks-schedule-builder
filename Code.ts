@@ -3,7 +3,7 @@ const text = { create: '스케줄 만들기', inProgress: '만들기 진행 중'
 const createBtn = { row: 24, col: 2 };
 const dateData = { label: { row: 23, col: 1 }, selector: { row: 23, col: 2 }, };
 const partnerArea = { start: { row: 2, col: 1 }, numberOfPartners: 20, numColumns: 4, };
-const leftOverSection = { row: 10, col: 1 }
+const leftOverSection = { row: 9, col: 1 }
 const colors = { red: '#ffc3c3', green: '#cbffc3', };
 const dayAbbrev = ['일', '월', '화', '수', '목', '금', '토'];
 const shiftBG = { '오픈': colors.green, '미들': '#feffba', '마감': '#f2d0ff' };
@@ -465,38 +465,65 @@ function makeSchedule() {
   }
 
   // create a label for leftover shifts that the manager must handle manually
-  const leftoverCell = sheetSchedule.getRange(leftOverSection.row, leftOverSection.col);
-  leftoverCell.setValue('남은 쉬프트');
-  leftoverCell.setFontWeight('bold');
-  leftoverCell.setVerticalAlignment('center');
-  leftoverCell.setHorizontalAlignment('center');
+  formatDayRange(sheetSchedule
+    .getRange(leftOverSection.row, leftOverSection.col)
+    .setValue('나머지'));
 
   // let the user know how many shifts are left over for each partner
   partnersValid.forEach((p: Partner) => {
-    const cell = sheetSchedule.getRange(leftOverSection.row, p.columnNumber);
-    cell.setValue(shifts.filter((s: Partner) => s.id === p.id).length);
-    cell.setFontWeight('bold');
-    cell.setVerticalAlignment('center');
-    cell.setHorizontalAlignment('center');
+    formatDayRange(sheetSchedule
+      .getRange(leftOverSection.row, p.columnNumber)
+      .setValue(shifts.filter((s: Partner) => s.id === p.id).length));
   });
 
+  const dayLabels: Array<Array<string | number>> = [];
+  const lastCol = sheetSchedule.getLastColumn() + 1;
   to7.forEach(n => {
     const cell = sheetSchedule.getRange(n + 2, 1);
     const day = schedule[n];
     const date = dates[n];
     const d = date.getDate();
     const dayName = `${date.getMonth() + 1}/${d}`;
-    cell.setValue(`${dayName} ${dayAbbrev[date.getDay()]} (오${day['오픈'].length},미${day['미들'].length},마${day['마감'].length})`);
-    cell.setFontWeight('bold');
-    cell.setVerticalAlignment('center');
-    cell.setHorizontalAlignment('center');
-    cell.setBorder(true, true, true, true, true, true);
+
+    const dayLabel = `${dayName} (${dayAbbrev[date.getDay()]})`;
+    dayLabels.push([dayLabel]);
+    cell.setValue(dayLabel);
+
+    formatDayRange(cell);
     const year = date.getFullYear();
     if (holidays[year] && holidays[year][dayName]) {
       cell.setBackground('#cc092f');
       cell.setFontColor('#ffffff');
       cell.setNote(holidays[year][dayName]);
     }
+    formatDayRange(sheetSchedule.getRange(n + 2, lastCol, 1, 3).setValues([[
+      day['오픈'].length,
+      day['미들'].length,
+      day['마감'].length,
+    ]]));
+    dayLabels[n].push(day['오픈'].length + day['미들'].length + day['마감'].length);
   });
-  sheetSchedule.autoResizeColumns(1, partnersValid.length + 1);
+  formatDayRange(sheetSchedule.getRange(1, lastCol, 1, 3).setValues([['(오)', '(미)', '(마)']]));
+  sheetSchedule.autoResizeColumns(1, partnersValid.length + 4);
+
+  const sheetPositions = ss.getSheetByName('Positions');
+  const rangeDayLabels = sheetPositions.getRange(1, 4, 7, 2);
+  rangeDayLabels.setValues(dayLabels);
+
+  sheetSchedule.insertChart(sheetSchedule
+    .newChart()
+    .setChartType(Charts.ChartType.COLUMN)
+    .addRange(rangeDayLabels)
+    .setPosition(11, 1, 0, 0)
+    .setOption('title', 'Shifts by Day')
+    .setOption('animation.duration', 1000)
+    .build());
+
 }
+
+const formatDayRange = (dayRange: GoogleAppsScript.Spreadsheet.Range) => {
+  dayRange.setFontWeight('bold');
+  dayRange.setVerticalAlignment('center');
+  dayRange.setHorizontalAlignment('center');
+  dayRange.setBorder(true, true, true, true, true, true);
+};
