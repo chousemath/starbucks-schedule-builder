@@ -273,6 +273,15 @@ function emailSchedule() {
   });
 }
 
+const shiftAllowed = (selectedShift: Partner, day: number, ids: Array<number>): boolean => {
+  return (
+    selectedShift.position !== SBPosition.Trainee &&
+    day !== selectedShift.RestDay1 &&
+    day !== selectedShift.RestDay2 &&
+    ids.indexOf(selectedShift.id) === -1
+  );
+};
+
 function makeSchedule() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -344,10 +353,7 @@ function makeSchedule() {
         to1000.some(_ => {
           // make sure that this partner does not already have a shift on this day on this shift
           const selectedShift: Partner = shifts[shifts.length - 1];
-          if (selectedShift.position !== SBPosition.Trainee &&
-            dates[d].getDay() !== selectedShift.RestDay1 &&
-            dates[d].getDay() !== selectedShift.RestDay2 &&
-            ids.indexOf(selectedShift.id) === -1 &&
+          if (shiftAllowed(selectedShift, dates[d].getDay(), ids) &&
             // two baristas cannot open
             !(s === '오픈' &&
               positionsInShift.indexOf(SBPosition.Barista) > -1 &&
@@ -387,10 +393,7 @@ function makeSchedule() {
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
-        if (selectedShift.position !== SBPosition.Trainee &&
-          dates[d].getDay() !== selectedShift.RestDay1 &&
-          dates[d].getDay() !== selectedShift.RestDay2 &&
-          ids.indexOf(selectedShift.id) === -1) {
+        if (shiftAllowed(selectedShift, dates[d].getDay(), ids)) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
           positionsInShift.push(shift.position);
@@ -417,10 +420,7 @@ function makeSchedule() {
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
-        if (selectedShift.position !== SBPosition.Trainee &&
-          dates[d].getDay() !== selectedShift.RestDay1 &&
-          dates[d].getDay() !== selectedShift.RestDay2 &&
-          ids.indexOf(selectedShift.id) === -1) {
+        if (shiftAllowed(selectedShift, dates[d].getDay(), ids)) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
           positionsInShift.push(shift.position);
@@ -447,10 +447,7 @@ function makeSchedule() {
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
-        if (selectedShift.position !== SBPosition.Trainee &&
-          dates[d].getDay() !== selectedShift.RestDay1 &&
-          dates[d].getDay() !== selectedShift.RestDay2 &&
-          ids.indexOf(selectedShift.id) === -1) {
+        if (shiftAllowed(selectedShift, dates[d].getDay(), ids)) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
           positionsInShift.push(shift.position);
@@ -475,10 +472,7 @@ function makeSchedule() {
       to1000.some(_ => {
         // make sure that this partner does not already have a shift on this day on this shift
         const selectedShift: Partner = shifts[shifts.length - 1];
-        if (selectedShift.position !== SBPosition.Trainee &&
-          dates[d].getDay() !== selectedShift.RestDay1 &&
-          dates[d].getDay() !== selectedShift.RestDay2 &&
-          ids.indexOf(selectedShift.id) === -1) {
+        if (shiftAllowed(selectedShift, dates[d].getDay(), ids)) {
           const shift: Partner = shifts.pop();
           schedule[d][s].push(shift);
           positionsInShift.push(shift.position);
