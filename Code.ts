@@ -203,6 +203,7 @@ function onOpen(_) {
     .addItem('새 일정 만들기', 'makeSchedule')
     .addItem('현재 일정 저장하기', 'saveSchedule')
     .addItem('현재 일정 공유하기', 'shareSchedule')
+    .addItem('누군가에게 일정을 이메일로 보내기', 'emailSchedule')
     .addToUi();
 }
 
@@ -227,8 +228,10 @@ const validateEmail = (email: string) => {
 
 function shareSchedule() {
   const ui = SpreadsheetApp.getUi();
-  const email = ui.prompt('이메일로 공유', '이메일 주소를 입력하십시오.', ui.ButtonSet.YES_NO).getResponseText();
-  if (!validateEmail(email)) return ui.alert('올바른 이메일 주소를 입력하십시오.');
+  const response = ui.prompt('이메일로 공유', '이메일 주소를 입력하십시오.', ui.ButtonSet.YES_NO)
+  if (response.getSelectedButton() == ui.Button.NO) return;
+  const email = response.getResponseText();
+  if (!email || !validateEmail(email)) return ui.alert('올바른 이메일 주소를 입력하십시오.');
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const d = new Date();
   const name = `${d.getMonth() + 1}/${d.getDate()} (${Math.floor(Date.now() / 1000)})`;
@@ -246,6 +249,28 @@ function shareSchedule() {
   const sheet1 = newSS.getSheetByName('Sheet1');
   if (sheet1) newSS.deleteSheet(sheet1);
   ui.alert('일정이 성공적으로 공유되었습니다.');
+}
+
+const generateTableHTML = (data: Array<Array<any>>): string => {
+  return '<table style="width:100%; border: 1px solid black; text-align: center;">' + data.map(row => '<tr style="border: 1px solid black; text-align: center;">' + row.map(cell => `<td style="border: 1px solid black; text-align: center;">${cell}</td>`).join('') + '</tr>').join('') + '</table>';
+}
+
+function emailSchedule() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt('이메일로 공유', '이메일 주소를 입력하십시오.', ui.ButtonSet.YES_NO)
+  if (response.getSelectedButton() == ui.Button.NO) return;
+  const email = response.getResponseText();
+  if (!email || !validateEmail(email)) return ui.alert('올바른 이메일 주소를 입력하십시오.');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetSchedule = ss.getSheetByName('Schedule');
+  const lastRow = sheetSchedule.getLastRow();
+  const lastCol = sheetSchedule.getLastColumn();
+  const data = sheetSchedule.getRange(1, 1, lastRow, lastCol).getValues();
+  MailApp.sendEmail({
+    to: email,
+    subject: '스타벅스 스케줄',
+    htmlBody: generateTableHTML(data),
+  });
 }
 
 function makeSchedule() {
